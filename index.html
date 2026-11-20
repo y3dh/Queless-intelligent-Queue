@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QUEUELESS — Intelligent Queue Management</title>
+<style>
+  :root{
+    --bg:#0e1116; --panel:#161b22; --panel2:#1c232c; --line:#2a323d;
+    --fg:#e6edf3; --muted:#8b98a5; --accent:#4f9cf9; --accent2:#2ea043;
+    --warn:#d29922; --danger:#f85149; --radius:10px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:14px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text",Helvetica,Arial,sans-serif}
+  header{padding:22px 26px;border-bottom:1px solid var(--line);
+         background:linear-gradient(180deg,#121823,#0e1116)}
+  header h1{margin:0;font-size:20px;letter-spacing:.3px}
+  header p{margin:4px 0 0;color:var(--muted);font-size:13px}
+  .wrap{display:grid;grid-template-columns:330px 1fr;gap:18px;padding:18px 26px 40px}
+  @media (max-width:900px){.wrap{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+        padding:16px;margin-bottom:18px}
+  .card h2{margin:0 0 4px;font-size:14px;letter-spacing:.4px;text-transform:uppercase}
+  .card .big{font-size:12px;color:var(--muted);margin:0 0 12px}
+  code.cx{background:var(--panel2);border:1px solid var(--line);border-radius:5px;
+          padding:1px 6px;font-size:11.5px;color:var(--accent)}
+  label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+  input,select,button{font:inherit;color:var(--fg);background:var(--panel2);
+        border:1px solid var(--line);border-radius:7px;padding:7px 9px;width:100%}
+  button{cursor:pointer;background:var(--accent);border-color:var(--accent);
+         color:#06121f;font-weight:600}
+  button:hover{filter:brightness(1.08)}
+  button.ghost{background:var(--panel2);color:var(--fg);border-color:var(--line);font-weight:500}
+  .row{display:flex;gap:8px;align-items:end}
+  .row>*{flex:1}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;color:var(--muted);font-weight:600;padding:6px 8px;
+     border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:6px 8px;border-bottom:1px solid #20262f}
+  tbody tr:hover{background:#19202a}
+  .pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11px;
+        border:1px solid}
+  .emergency{color:#ffb4ae;border-color:#5c2420;background:#2a1513}
+  .senior{color:#ffd79b;border-color:#5a4318;background:#261c0d}
+  .appointment{color:#a8d5ff;border-color:#1d3d5c;background:#0f1d2b}
+  .normal{color:#b9c3cd;border-color:#2e3843;background:#1a2027}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  @media (max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .stat b{display:block;font-size:20px;font-weight:650;margin-top:2px}
+  .stat span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .gantt{overflow-x:auto}
+  .glane{display:flex;align-items:center;gap:8px;margin:7px 0}
+  .glabel{width:86px;flex:none;font-size:12px;color:var(--muted)}
+  .gtrack{position:relative;flex:1;height:26px;background:var(--panel2);
+          border:1px solid var(--line);border-radius:6px;min-width:420px}
+  .gbar{position:absolute;top:3px;height:18px;border-radius:4px;font-size:10.5px;
+        color:#06121f;display:flex;align-items:center;justify-content:center;
+        overflow:hidden;white-space:nowrap;font-weight:600}
+  .bar-emergency{background:#f0867d}.bar-senior{background:#e3b341}
+  .bar-appointment{background:#58a6ff}.bar-normal{background:#7d8993}
+  .meter{height:9px;background:var(--panel2);border:1px solid var(--line);
+         border-radius:999px;overflow:hidden}
+  .meter i{display:block;height:100%;background:var(--accent)}
+  .cmp{display:grid;grid-template-columns:70px 1fr 78px;gap:10px;align-items:center;margin:8px 0}
+  .cmp .b{height:20px;border-radius:5px}
+  .path{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}
+  .node{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:4px 9px;font-size:12px}
+  .node.last{border-color:var(--accent2);color:#7ee787}
+  .arrow{color:var(--muted)}
+  .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin-top:10px}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px}
+  .muted{color:var(--muted);font-size:12px}
+  .tokrow{display:grid;grid-template-columns:1fr 92px 46px 46px 26px;gap:6px;margin-bottom:6px}
+  .tokrow input,.tokrow select{padding:5px 6px;font-size:12px}
+  .del{background:#2a1513;border-color:#5c2420;color:#ffb4ae;font-weight:600;padding:5px}
+  footer{padding:0 26px 30px;color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>QUEUELESS <span style="color:var(--muted);font-weight:400">— Intelligent Queue Management System</span></h1>
+  <p>Design &amp; Analysis of Algorithms mini project · min-heap dispatch · greedy SJF · DP allocation · Dijkstra routing</p>
+</header>
+
+<div class="wrap">
+  <!-- ------------------------------- controls -->
+  <div>
+    <div class="card">
+      <h2>Counters</h2>
+      <p class="big">Service speed multiplier (1.0 = normal)</p>
+      <div id="counters"></div>
+      <div class="row" style="margin-top:10px">
+        <button class="ghost" onclick="addCounter()">+ Counter</button>
+        <button class="ghost" onclick="delCounter()">− Counter</button>
+      </div>
+      <label>Floating staff for DP allocation: <b id="staffVal">4</b></label>
+      <input type="range" id="staff" min="0" max="10" value="4"
+             oninput="document.getElementById('staffVal').textContent=this.value">
+    </div>
+
+    <div class="card">
+      <h2>Tokens</h2>
+      <p class="big">name · class · arrival (min) · service (min)</p>
+      <div id="tokens"></div>
+      <div class="row" style="margin-top:10px">
+        <button class="ghost" onclick="addToken()">+ Token</button>
+        <button class="ghost" onclick="loadSample()">Sample data</button>
+      </div>
+      <button style="margin-top:12px" onclick="run()">▶ Run simulation</button>
+      <p class="muted" id="err"></p>
+    </div>
+  </div>
+
+  <!-- ------------------------------- results -->
+  <div>
+    <div class="card">
+      <h2>1 · Priority dispatch <code class="cx">O((n+m) log n)</code></h2>
+      <p class="big">Two binary min-heaps: most-urgent token × earliest-free counter</p>
+      <div class="stats" id="stats"></div>
+      <div class="gantt" id="gantt" style="margin-top:16px"></div>
+      <div class="legend">
+        <span><i class="bar-emergency"></i>emergency</span>
+        <span><i class="bar-senior"></i>senior</span>
+        <span><i class="bar-appointment"></i>appointment</span>
+        <span><i class="bar-normal"></i>normal</span>
+      </div>
+      <div style="overflow-x:auto;margin-top:14px"><table id="sched"></table></div>
+    </div>
+
+    <div class="card">
+      <h2>2 · Greedy SJF vs FCFS <code class="cx">O(n log n)</code></h2>
+      <p class="big">Average waiting time if every token were served on one counter</p>
+      <div id="greedy"></div>
+    </div>
+
+    <div class="card">
+      <h2>3 · DP staff allocation <code class="cx">O(m·S²)</code></h2>
+      <p class="big">dp[i][s] = min<sub>k≤s</sub> ( load[i]/(k+1) + dp[i+1][s−k] )</p>
+      <div id="alloc"></div>
+    </div>
+
+    <div class="card">
+      <h2>4 · Dijkstra counter routing <code class="cx">O(E log V)</code></h2>
+      <p class="big">Shortest walk from the entrance to the nearest open counter</p>
+      <div id="route"></div>
+    </div>
+  </div>
+</div>
+
+<footer>All four algorithms run in Python (<code>algorithms.py</code>); this page is only the front-end.</footer>
+
+<script>
+const CLASSES = ["emergency","senior","appointment","normal"];
+let counters = [1.0, 1.5, 0.8];
+let tokens = [];
+
+const SAMPLE = [
+  ["Asha","normal",4,9],["Bilal","emergency",1,4],["Chandu","appointment",3,8],
+  ["Divya","senior",1,11],["Eshan","normal",1,4],["Farah","senior",13,4],
+  ["Gopi","normal",2,11],["Hiba","senior",1,12],["Irfan","normal",7,12],
+  ["Jaya","normal",18,12],["Kiran","senior",1,6],["Latha","normal",17,5],
+];
+
+function loadSample(){
+  tokens = SAMPLE.map(([name,category,arrival,service_time])=>({name,category,arrival,service_time}));
+  renderTokens(); run();
+}
+function addToken(){
+  tokens.push({name:"Customer "+(tokens.length+1),category:"normal",
+               arrival:Math.floor(Math.random()*20),service_time:3+Math.floor(Math.random()*9)});
+  renderTokens();
+}
+function addCounter(){ if(counters.length<6){counters.push(1.0); renderCounters();} }
+function delCounter(){ if(counters.length>1){counters.pop(); renderCounters();} }
+
+function renderCounters(){
+  document.getElementById("counters").innerHTML = counters.map((s,i)=>`
+    <div class="row" style="margin-bottom:6px">
+      <div style="flex:0 0 86px" class="muted">Counter-${i+1}</div>
+      <input type="number" step="0.1" min="0.2" max="3" value="${s}"
+             oninput="counters[${i}]=parseFloat(this.value)||1">
+    </div>`).join("");
+}
+function renderTokens(){
+  document.getElementById("tokens").innerHTML = tokens.map((t,i)=>`
+    <div class="tokrow">
+      <input value="${t.name}" oninput="tokens[${i}].name=this.value">
+      <select onchange="tokens[${i}].category=this.value">
+        ${CLASSES.map(c=>`<option ${c===t.category?"selected":""}>${c}</option>`).join("")}
+      </select>
+      <input type="number" min="0" value="${t.arrival}" oninput="tokens[${i}].arrival=+this.value">
+      <input type="number" min="1" value="${t.service_time}" oninput="tokens[${i}].service_time=+this.value">
+      <button class="del" onclick="tokens.splice(${i},1);renderTokens()">×</button>
+    </div>`).join("");
+}
+
+async function run(){
+  const staff = +document.getElementById("staff").value;
+  const body = {tokens, counters: counters.map(s=>({speed:s})), staff};
+  const err = document.getElementById("err"); err.textContent = "";
+  try{
+    const res = await fetch("/api/run",{method:"POST",headers:{"Content-Type":"application/json"},
+                                       body:JSON.stringify(body)});
+    const data = await res.json();
+    if(data.error){ err.textContent = "Error: "+data.error; return; }
+    draw(data);
+  }catch(e){ err.textContent = "Server not reachable — is server.py running?"; }
+}
+
+function draw(d){
+  // ---- stats
+  document.getElementById("stats").innerHTML = `
+    <div class="stat"><span>tokens served</span><b>${d.stats.served}</b></div>
+    <div class="stat"><span>avg wait</span><b>${d.stats.avg_wait.toFixed(2)}<small style="font-size:12px"> min</small></b></div>
+    <div class="stat"><span>max wait</span><b>${d.stats.max_wait}<small style="font-size:12px"> min</small></b></div>
+    <div class="stat"><span>makespan</span><b>${d.stats.makespan}<small style="font-size:12px"> min</small></b></div>`;
+
+  // ---- gantt, one lane per counter
+  const span = Math.max(d.stats.makespan, 1);
+  const lanes = d.counters.map(c=>{
+    const bars = d.schedule.filter(r=>r.counter===c.name).map(r=>{
+      const left = r.start/span*100, w = Math.max((r.end-r.start)/span*100, 2.2);
+      return `<div class="gbar bar-${r.category}" style="left:${left}%;width:${w}%"
+                   title="${r.name} · ${r.category} · ${r.start}→${r.end} min (wait ${r.wait})">${r.name}</div>`;
+    }).join("");
+    return `<div class="glane"><div class="glabel">${c.name} ×${c.speed}</div>
+              <div class="gtrack">${bars}</div></div>`;
+  }).join("");
+  document.getElementById("gantt").innerHTML = lanes +
+    `<div class="glane"><div class="glabel"></div><div class="muted" style="flex:1">
+       0 min ${"&nbsp;".repeat(10)} → ${"&nbsp;".repeat(10)} ${span} min</div></div>`;
+
+  // ---- schedule table
+  document.getElementById("sched").innerHTML = `
+    <thead><tr><th>#</th><th>Name</th><th>Class</th><th>Counter</th>
+    <th>Arrive</th><th>Start</th><th>End</th><th>Wait</th></tr></thead><tbody>${
+    d.schedule.map(r=>`<tr><td>${r.tid}</td><td>${r.name}</td>
+      <td><span class="pill ${r.category}">${r.category}</span></td>
+      <td>${r.counter}</td><td>${r.arrival}</td><td>${r.start}</td><td>${r.end}</td>
+      <td><b>${r.wait}</b></td></tr>`).join("")}</tbody>`;
+
+  // ---- greedy comparison
+  const g = d.greedy, mx = Math.max(g.fcfs, g.sjf, 1);
+  document.getElementById("greedy").innerHTML = `
+    <div class="cmp"><div class="muted">FCFS</div>
+      <div class="b" style="width:${g.fcfs/mx*100}%;background:#7d8993"></div>
+      <div><b>${g.fcfs.toFixed(2)}</b> min</div></div>
+    <div class="cmp"><div class="muted">SJF</div>
+      <div class="b" style="width:${g.sjf/mx*100}%;background:var(--accent2)"></div>
+      <div><b>${g.sjf.toFixed(2)}</b> min</div></div>
+    <p class="muted">Greedy SJF cuts average waiting time by
+       <b style="color:#7ee787">${g.improvement.toFixed(2)}%</b>.
+       Exchange argument: swapping any longer-before-shorter pair strictly improves the total,
+       so an optimal order has no such inversion.</p>
+    <p class="muted">SJF order: ${g.sjf_order.map(t=>`${t.name}(${t.service_time})`).join(", ")}</p>`;
+
+  // ---- DP allocation
+  const a = d.allocation, worst = Math.max(...a.rows.map(r=>r.load), 1);
+  document.getElementById("alloc").innerHTML = a.rows.map(r=>`
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between">
+        <span>${r.counter} <span class="muted">load ${r.load.toFixed(0)} min</span></span>
+        <span>+${r.extra} staff → <b>${r.wait.toFixed(2)}</b> min</span>
+      </div>
+      <div class="meter"><i style="width:${r.load/worst*100}%"></i></div>
+    </div>`).join("") +
+    `<p class="muted">${a.staff} floating staff placed optimally · total predicted wait
+      <b>${a.total_cost.toFixed(2)} min</b>. Greedy fails here: each extra employee
+      only helps by 1/(k+1), so the DP must compare whole distributions.</p>`;
+
+  // ---- routing
+  const r = d.routing;
+  document.getElementById("route").innerHTML = r.target ? `
+    <div>Nearest open counter: <b>${r.target}</b> <span class="muted">(${r.distance} m walk)</span></div>
+    <div class="path">${r.path.map((n,i)=>
+      `<span class="node ${i===r.path.length-1?"last":""}">${n}</span>` +
+      (i<r.path.length-1?'<span class="arrow">→</span>':"")).join("")}</div>`
+    : `<p class="muted">No counter in the floor plan.</p>`;
+}
+
+renderCounters(); loadSample();
+</script>
+</body>
+</html>
